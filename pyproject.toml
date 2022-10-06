@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "hw-28"
+version = "0.1.0"
+description = ""
+authors = ["p-and14 <p-and14@yandex.ru>"]
+readme = "README.md"
+packages = [{include = "hw_28"}]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+Django = "^4.1.2"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
