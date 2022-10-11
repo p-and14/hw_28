@@ -2,6 +2,7 @@ import json
 
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
+from django.db.models import Q
 from django.http import JsonResponse
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
@@ -22,6 +23,27 @@ class AdListView(ListView):
     queryset = Ad.objects.order_by("-price").select_related('author', 'category')
 
     def get(self, request, *args, **kwargs):
+        category = request.GET.get("cat", None)
+        if category:
+            self.queryset = self.queryset.filter(Q(category__id=category))
+
+        text = request.GET.get("text", None)
+        if text:
+            self.queryset = self.queryset.filter(Q(name__icontains=text))
+
+        location = request.GET.get("location", None)
+        if location:
+            self.queryset = self.queryset.filter((Q(author__location__name__icontains=location)))
+
+        price_from = request.GET.get("price_from", None)
+        price_to = request.GET.get("price_to", None)
+        if price_from and price_to:
+            self.queryset = self.queryset.filter(Q(price__range=(prwice_from, price_to)))
+        elif price_from:
+            self.queryset = self.queryset.filter(Q(price__gte=price_from))
+        elif price_to:
+            self.queryset = self.queryset.filter(Q(price__lte=price_to))
+
         super().get(request, *args, **kwargs)
 
         paginator = Paginator(self.object_list, TOTAL_ON_PAGE)
