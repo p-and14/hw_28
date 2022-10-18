@@ -16,8 +16,13 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 
+from ads.views import index
+
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('ads.urls')),
+    path('', index, name="index"),
+    path('ad/', include('ads.urls.ad_urls')),
+    path('cat/', include('ads.urls.category_urls')),
+    path('selection/', include('ads.urls.selection_urls')),
     path('', include('users.urls'))
 ]

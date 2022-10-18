@@ -37,15 +37,15 @@ ads_list = []
 with open(csv_files[2]) as f:
     csv = csv.DictReader(f)
     for row in csv:
-        fields = {
-            "name": row["name"],
-            "latitude": row["lat"],
-            "longitude": row["lng"]
-        }
+        # fields = {
+        #     "name": row["name"],
+        #     "latitude": row["lat"],
+        #     "longitude": row["lng"]
+        # }
         ad = {
-            "model": "ads.location",
-            "pk": int(row['id']),
-            "fields": fields
+            "model": "users.location",
+            "pk": int(row.pop('id')),
+            "fields": row
         }
 
         ads_list.append(ad)

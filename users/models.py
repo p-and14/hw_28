@@ -1,8 +1,9 @@
+from django.contrib.auth.models import AbstractUser
 from django.db import models
 
 
 class Location(models.Model):
-    name = models.CharField(max_length=50)
+    name = models.CharField(max_length=50, unique=True)
     latitude = models.FloatField(null=True, blank=True)
     longitude = models.FloatField(null=True, blank=True)
 
@@ -15,20 +16,23 @@ class Location(models.Model):
         return self.name
 
 
-class User(models.Model):
+class User(AbstractUser):
+    MEMBER = "member"
+    MODERATOR = "moderator"
+    ADMIN = "admin"
     ROLES = [
-        ("member", "пользователь"),
-        ("moderator", "модератор"),
-        ("admin", "админ"),
+        (MEMBER, "пользователь"),
+        (MODERATOR, "модератор"),
+        (ADMIN, "админ"),
     ]
 
-    first_name = models.CharField(max_length=15)
-    last_name = models.CharField(max_length=15, blank=True, default="")
-    username = models.CharField(max_length=20)
-    password = models.CharField(max_length=20)
+    MALE = "m"
+    FEMALE = "f"
+    SEX = [(MALE, "male"), (FEMALE, "female")]
     role = models.CharField(max_length=10, choices=ROLES, default="member")
-    age = models.PositiveSmallIntegerField()
-    location = models.ForeignKey(Location, on_delete=models.CASCADE)
+    age = models.PositiveSmallIntegerField(null=True, blank=True)
+    location = models.ForeignKey(Location, on_delete=models.CASCADE, related_name="user", null=True, blank=True)
+    sex = models.CharField(max_length=1, choices=SEX, default=MALE, blank=True)
 
     class Meta:
         verbose_name = "Пользователь"
@@ -37,4 +41,3 @@ class User(models.Model):
 
     def __str__(self):
         return self.username
-
