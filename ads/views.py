@@ -1,12 +1,10 @@
 import json
 
 from django.core.exceptions import ValidationError
-from django.core.paginator import Paginator
-from django.db.models import Q
 from django.http import JsonResponse
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
-from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
+from django.views.generic import ListView, DetailView, UpdateView, DeleteView
 from rest_framework import generics
 from rest_framework.generics import RetrieveAPIView
 from rest_framework.permissions import IsAuthenticated
@@ -14,8 +12,6 @@ from rest_framework.permissions import IsAuthenticated
 from ads.models import Ad, Category, Selection
 from ads import serializers
 from ads.permissions import SelectionPermissions, AdPermissions
-from users.models import User
-from hw_28.settings import TOTAL_ON_PAGE
 
 
 def index(request):
@@ -23,55 +19,9 @@ def index(request):
 
 
 @method_decorator(csrf_exempt, name="dispatch")
-class AdListView(ListView):
-    model = Ad
-    queryset = Ad.objects.order_by("-price").select_related('author', 'category')
-
-    def get(self, request, *args, **kwargs):
-        if category := request.GET.get("cat", None):
-            self.queryset = self.queryset.filter(Q(category__id=category))
-
-        if text := request.GET.get("text", None):
-            self.queryset = self.queryset.filter(Q(name__icontains=text))
-
-        if location := request.GET.get("location", None):
-            self.queryset = self.queryset.filter((Q(author__location__name__icontains=location)))
-
-        price_from = request.GET.get("price_from", None)
-        price_to = request.GET.get("price_to", None)
-        if price_from and price_to:
-            self.queryset = self.queryset.filter(Q(price__range=(price_from, price_to)))
-        elif price_from:
-            self.queryset = self.queryset.filter(Q(price__gte=price_from))
-        elif price_to:
-            self.queryset = self.queryset.filter(Q(price__lte=price_to))
-
-        super().get(request, *args, **kwargs)
-
-        paginator = Paginator(self.object_list, TOTAL_ON_PAGE)
-        page_obj = paginator.get_page(request.GET.get("page"))
-
-        ads = []
-        for ad in page_obj:
-            ads.append({
-                "id": ad.id,
-                "name": ad.name,
-                "author_id": ad.author_id,
-                "author": ad.author.first_name,
-                "price": ad.price,
-                "description": ad.description,
-                "is_published": ad.is_published,
-                "category_id": ad.category_id,
-                "image": ad.image.url,
-            })
-
-        response = {
-            "items": ads,
-            "total": paginator.count,
-            "num_pages": paginator.num_pages,
-        }
-
-        return JsonResponse(response)
+class AdListView(generics.ListAPIView):
+    queryset = Ad.objects.all()
+    serializer_class = serializers.AdListSerializer
 
 
 class AdDetailView(RetrieveAPIView):
@@ -82,32 +32,9 @@ class AdDetailView(RetrieveAPIView):
 
 
 @method_decorator(csrf_exempt, name="dispatch")
-class AdCreateView(CreateView):
-    model = Ad
-    fields = ["name", "author", "price", "description", "is_published", "category"]
-
-    def post(self, request, *args, **kwargs):
-        super().post(request, *args, **kwargs)
-        ad_data = json.loads(request.body)
-
-        ad = Ad()
-        ad.name = ad_data["name"]
-        ad.author, _ = User.objects.get_or_create(id=ad_data["author_id"])
-        ad.price = ad_data["price"]
-        ad.description = ad_data["description"]
-        ad.is_published = ad_data["is_published"]
-        ad.category, _ = Category.objects.get_or_create(id=ad_data["category_id"])
-
-        ad.save()
-        return JsonResponse({
-            "id": ad.id,
-            "name": ad.name,
-            "author_id": ad.author_id,
-            "price": ad.price,
-            "description": ad.description,
-            "is_published": ad.is_published,
-            "category_id": ad.category_id,
-        })
+class AdCreateView(generics.CreateAPIView):
+    queryset = Ad.objects.all()
+    serializer_class = serializers.AdCreateSerializer
 
 
 class AdUpdateView(generics.UpdateAPIView):
@@ -180,22 +107,9 @@ class CategoryDetailView(DetailView):
         return JsonResponse(response)
 
 
-@method_decorator(csrf_exempt, name="dispatch")
-class CategoryCreateView(CreateView):
-    model = Category
-    fields = ["name"]
-
-    def post(self, request, *args, **kwargs):
-        category_data = json.loads(request.body)
-
-        category = Category.objects.create(
-            name=category_data["name"]
-        )
-
-        return JsonResponse({
-            "id": category.id,
-            "name": category.name,
-        })
+class CategoryCreateView(generics.CreateAPIView):
+    queryset = Category.objects.all()
+    serializer_class = serializers.CategoryCreateSerializer
 
 
 @method_decorator(csrf_exempt, name="dispatch")
@@ -246,7 +160,7 @@ class SelectionDetailView(generics.RetrieveAPIView):
 class SelectionCreateView(generics.CreateAPIView):
     queryset = Selection.objects.all()
     serializer_class = serializers.SelectionCreateSerializer
-    permission_classes = [IsAuthenticated, SelectionPermissions]
+    permission_classes = [IsAuthenticated]
 
 
 class SelectionUpdateView(generics.UpdateAPIView):
